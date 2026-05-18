@@ -4,40 +4,45 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 
+# ---------------------------------------------------
 # PAGE SETTINGS
+# ---------------------------------------------------
 
 st.set_page_config(
-    page_title="ETF RSI Scanner",
+    page_title="NSE ETF RSI Scanner",
     page_icon="📈",
     layout="wide"
 )
 
+# ---------------------------------------------------
 # TITLE
+# ---------------------------------------------------
 
 st.title("📈 NSE ETF RSI Scanner")
-st.markdown("Professional Low RSI ETF Buying Zone Scanner")
 
+st.markdown(
+    "Professional Low RSI ETF Buying Zone Scanner"
+)
+
+# ---------------------------------------------------
 # ETF LIST
+# ---------------------------------------------------
 
 etfs = [
     "NIFTYBEES",
     "BANKBEES",
     "JUNIORBEES",
     "ITBEES",
-    "AUTOBEES",
-    "PSUBNKBEES",
+    "PSUBNKIETF",
     "CPSEETF",
     "ICICIB22",
-    "MID150BEES",
-    "NEXT50",
-    "PHARMABEES",
-    "ENERGYETF",
-    "INFRABEES",
     "MON100",
     "MAFANG"
 ]
 
+# ---------------------------------------------------
 # RSI FUNCTION
+# ---------------------------------------------------
 
 def calculate_rsi(data, period=14):
 
@@ -57,13 +62,17 @@ def calculate_rsi(data, period=14):
 
     return rsi
 
-# BUTTON
+# ---------------------------------------------------
+# REFRESH BUTTON
+# ---------------------------------------------------
 
 if st.button("🔄 Refresh Data"):
 
     st.info("Updating ETF Data...")
 
-# MAIN DATA
+# ---------------------------------------------------
+# MAIN DATA COLLECTION
+# ---------------------------------------------------
 
 results = []
 
@@ -80,27 +89,48 @@ for etf in etfs:
             progress=False
         )
 
-        close = df['Close']
+        # CHECK EMPTY DATA
 
-        latest_price = round(close.iloc[-1], 2)
+        if df.empty:
+            continue
+
+        # FIX CLOSE COLUMN
+
+        close = df['Close'].squeeze()
+
+        # GET PRICE
+
+        latest_price = float(
+            round(close.iloc[-1], 2)
+        )
+
+        # CALCULATE RSI
 
         rsi = calculate_rsi(close)
 
-        latest_rsi = round(rsi.iloc[-1], 2)
+        latest_rsi = float(
+            round(rsi.iloc[-1], 2)
+        )
 
-        # SIGNAL
+        # SIGNAL SYSTEM
 
         if latest_rsi < 30:
+
             signal = "🟢 Strong Buy"
 
         elif latest_rsi < 35:
+
             signal = "🟡 Buy Zone"
 
         elif latest_rsi > 70:
+
             signal = "🔴 Overbought"
 
         else:
+
             signal = "⚪ Neutral"
+
+        # STORE RESULTS
 
         results.append([
             etf,
@@ -109,10 +139,13 @@ for etf in etfs:
             signal
         ])
 
-    except:
-        pass
+    except Exception as e:
 
-# DATAFRAME
+        st.error(f"Error loading {etf}")
+
+# ---------------------------------------------------
+# CREATE DATAFRAME
+# ---------------------------------------------------
 
 df_results = pd.DataFrame(
     results,
@@ -124,16 +157,26 @@ df_results = pd.DataFrame(
     ]
 )
 
-# DISPLAY TABLE
+# ---------------------------------------------------
+# SHOW ETF TABLE
+# ---------------------------------------------------
 
 st.subheader("📊 ETF RSI Data")
 
-st.dataframe(
-    df_results,
-    use_container_width=True
-)
+if not df_results.empty:
 
-# BUY ZONE
+    st.dataframe(
+        df_results,
+        use_container_width=True
+    )
+
+else:
+
+    st.warning("No ETF Data Found")
+
+# ---------------------------------------------------
+# BUY ZONE TABLE
+# ---------------------------------------------------
 
 buy_df = df_results[
     df_results["RSI"] < 35
@@ -141,13 +184,22 @@ buy_df = df_results[
 
 st.subheader("🟢 Low RSI Buying Zone")
 
-st.dataframe(
-    buy_df,
-    use_container_width=True
-)
+if not buy_df.empty:
 
-# LAST UPDATE
+    st.dataframe(
+        buy_df,
+        use_container_width=True
+    )
+
+else:
+
+    st.info("No ETF currently in Buy Zone")
+
+# ---------------------------------------------------
+# LAST UPDATED
+# ---------------------------------------------------
 
 st.caption(
-    f"Last Updated: {datetime.now().strftime('%d-%b-%Y %H:%M:%S')}"
+    f"Last Updated: "
+    f"{datetime.now().strftime('%d-%b-%Y %H:%M:%S')}"
 )
