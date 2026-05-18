@@ -1,58 +1,126 @@
+# Professional NSE ETF RSI Dashboard — Full app.py Code
+
+Replace your FULL old `app.py` code with this new professional dashboard code.
+
+This version includes:
+
+* Professional dark dashboard UI
+* KPI cards
+* ETF ranking table
+* Strong Buy / Buy Zone filters
+* Sidebar controls
+* Search system
+* Auto sorting
+* TradingView clickable links
+* Progress loader
+* Responsive layout
+* Foreign + Indian ETFs
+* Colorful metrics
+* Modern styling
+
+---
+
+```python
 import streamlit as st
 import yfinance as yf
 import pandas as pd
 import numpy as np
 from datetime import datetime
 
-# ---------------------------------------------------
+# -------------------------------------------------
 # PAGE CONFIG
-# ---------------------------------------------------
+# -------------------------------------------------
 
 st.set_page_config(
-    page_title="NSE ETF RSI Scanner",
+    page_title="Professional NSE ETF RSI Dashboard",
     page_icon="📈",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-# ---------------------------------------------------
+# -------------------------------------------------
 # CUSTOM CSS
-# ---------------------------------------------------
+# -------------------------------------------------
 
 st.markdown("""
 <style>
+
+body {
+    background-color: #0E1117;
+}
 
 .main {
     background-color: #0E1117;
 }
 
-h1 {
+h1, h2, h3 {
     color: white;
 }
 
-table {
-    width: 100%;
+.metric-card {
+    background: linear-gradient(135deg, #1f2937, #111827);
+    padding: 20px;
+    border-radius: 15px;
+    text-align: center;
+    border: 1px solid #374151;
+    box-shadow: 0px 4px 12px rgba(0,0,0,0.3);
+}
+
+.metric-title {
+    color: #9ca3af;
+    font-size: 16px;
+}
+
+.metric-value {
+    color: white;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.buy {
+    color: #22c55e;
+    font-weight: bold;
+}
+
+.warning {
+    color: #facc15;
+    font-weight: bold;
+}
+
+.overbought {
+    color: #ef4444;
+    font-weight: bold;
+}
+
+.neutral {
+    color: #9ca3af;
+    font-weight: bold;
+}
+
+.table-container {
+    background-color: #111827;
+    padding: 10px;
+    border-radius: 12px;
 }
 
 </style>
 """, unsafe_allow_html=True)
 
-# ---------------------------------------------------
+# -------------------------------------------------
 # TITLE
-# ---------------------------------------------------
+# -------------------------------------------------
 
-st.title("📈 NSE ETF RSI Scanner")
+st.title("📈 Professional NSE ETF RSI Dashboard")
 
 st.markdown(
-    "### Professional Low RSI ETF Buying Zone Scanner"
+    "Real-Time Low RSI ETF Buying Zone Scanner"
 )
 
-# ---------------------------------------------------
+# -------------------------------------------------
 # ETF LIST
-# ---------------------------------------------------
+# -------------------------------------------------
 
 etfs = [
-
-    # MAIN ETFs
 
     "NIFTYBEES",
     "BANKBEES",
@@ -73,34 +141,45 @@ etfs = [
     "QUAL30IETF",
     "ALPHAETF",
     "LOWVOLIETF",
-
-    # FOREIGN ETFs
-
     "MON100",
     "MAFANG",
     "MAHKTECH",
     "HNGSNGBEES",
-
-    # EXTRA ETFs
-
     "MOM50",
-    "NIFITETF",
     "SETFNIF50",
+    "UTINEXT50",
     "AXISTECETF",
     "DSPITETF",
-    "UTINEXT50",
     "KOTAKBKETF",
-    "ICICINIFTY",
-    "ABSLNN50ET"
+    "ICICINIFTY"
 ]
-
-# REMOVE DUPLICATES
 
 etfs = list(set(etfs))
 
-# ---------------------------------------------------
+# -------------------------------------------------
+# SIDEBAR
+# -------------------------------------------------
+
+st.sidebar.title("⚙ Dashboard Settings")
+
+search_etf = st.sidebar.text_input(
+    "Search ETF"
+)
+
+rsi_filter = st.sidebar.selectbox(
+    "Select RSI Filter",
+    [
+        "All ETFs",
+        "Strong Buy",
+        "Buy Zone",
+        "Overbought"
+    ]
+)
+
+# -------------------------------------------------
 # RSI FUNCTION
-# ---------------------------------------------------
+# -------------------------------------------------
+
 
 def calculate_rsi(data, period=14):
 
@@ -120,17 +199,17 @@ def calculate_rsi(data, period=14):
 
     return rsi
 
-# ---------------------------------------------------
+# -------------------------------------------------
 # REFRESH BUTTON
-# ---------------------------------------------------
+# -------------------------------------------------
 
-if st.button("🔄 Refresh ETF Data"):
+if st.button("🔄 Refresh Live ETF Data"):
 
-    st.success("ETF Data Updated Successfully")
+    st.success("ETF Data Refreshed Successfully")
 
-# ---------------------------------------------------
-# MAIN DATA
-# ---------------------------------------------------
+# -------------------------------------------------
+# MAIN DATA COLLECTION
+# -------------------------------------------------
 
 results = []
 
@@ -149,22 +228,14 @@ for i, etf in enumerate(etfs):
             progress=False
         )
 
-        # SKIP EMPTY
-
         if df.empty:
             continue
 
-        # FIX CLOSE COLUMN
-
         close = df['Close'].squeeze()
-
-        # LATEST PRICE
 
         latest_price = float(
             round(close.iloc[-1], 2)
         )
-
-        # RSI
 
         rsi = calculate_rsi(close)
 
@@ -176,19 +247,23 @@ for i, etf in enumerate(etfs):
 
         if latest_rsi < 30:
 
-            signal = "🟢 STRONG BUY"
+            signal = "🟢 Strong Buy"
+            signal_class = "buy"
 
         elif latest_rsi < 35:
 
-            signal = "🟡 BUY ZONE"
+            signal = "🟡 Buy Zone"
+            signal_class = "warning"
 
         elif latest_rsi > 70:
 
-            signal = "🔴 OVERBOUGHT"
+            signal = "🔴 Overbought"
+            signal_class = "overbought"
 
         else:
 
-            signal = "⚪ NEUTRAL"
+            signal = "⚪ Neutral"
+            signal_class = "neutral"
 
         # TRADINGVIEW LINK
 
@@ -201,143 +276,334 @@ for i, etf in enumerate(etfs):
             f'target="_blank">{etf}</a>'
         )
 
-        # APPEND DATA
-
         results.append([
-
+            etf,
             etf_link,
             latest_price,
             latest_rsi,
-            signal
-
+            signal,
+            signal_class
         ])
 
     except:
-
         pass
 
     progress.progress((i + 1) / len(etfs))
 
-# ---------------------------------------------------
+# -------------------------------------------------
 # DATAFRAME
-# ---------------------------------------------------
+# -------------------------------------------------
+
+columns = [
+    "ETF_NAME",
+    "ETF",
+    "PRICE",
+    "RSI",
+    "SIGNAL",
+    "SIGNAL_CLASS"
+]
 
 df_results = pd.DataFrame(
-
     results,
+    columns=columns
+)
 
-    columns=[
-        "ETF",
-        "PRICE",
-        "RSI",
-        "SIGNAL"
+# -------------------------------------------------
+# SEARCH FILTER
+# -------------------------------------------------
+
+if search_etf:
+
+    df_results = df_results[
+        df_results['ETF_NAME']
+        .str.contains(search_etf.upper())
     ]
-)
 
-# ---------------------------------------------------
-# SORT BY RSI
-# ---------------------------------------------------
+# -------------------------------------------------
+# RSI FILTER
+# -------------------------------------------------
 
-df_results = df_results.sort_values(
-    by="RSI"
-)
+if rsi_filter == "Strong Buy":
 
-# ---------------------------------------------------
-# ETF DATA TABLE
-# ---------------------------------------------------
+    df_results = df_results[
+        df_results['RSI'] < 30
+    ]
 
-st.subheader("📊 ETF RSI Data")
+elif rsi_filter == "Buy Zone":
+
+    df_results = df_results[
+        (df_results['RSI'] >= 30) &
+        (df_results['RSI'] < 35)
+    ]
+
+elif rsi_filter == "Overbought":
+
+    df_results = df_results[
+        df_results['RSI'] > 70
+    ]
+
+# -------------------------------------------------
+# SORT
+# -------------------------------------------------
 
 if not df_results.empty:
 
-    st.write(
+    df_results = df_results.sort_values(
+        by="RSI"
+    )
 
-        df_results.to_html(
+# -------------------------------------------------
+# KPI CARDS
+# -------------------------------------------------
+
+if not df_results.empty:
+
+    total_etfs = len(df_results)
+
+    strong_buy_count = len(
+        df_results[df_results['RSI'] < 30]
+    )
+
+    buy_zone_count = len(
+        df_results[
+            (df_results['RSI'] >= 30) &
+            (df_results['RSI'] < 35)
+        ]
+    )
+
+    overbought_count = len(
+        df_results[df_results['RSI'] > 70]
+    )
+
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-title">Total ETFs</div>
+            <div class="metric-value">{total_etfs}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col2:
+
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-title">Strong Buy</div>
+            <div class="metric-value">{strong_buy_count}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col3:
+
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-title">Buy Zone</div>
+            <div class="metric-value">{buy_zone_count}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col4:
+
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-title">Overbought</div>
+            <div class="metric-value">{overbought_count}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+# -------------------------------------------------
+# MAIN TABLE
+# -------------------------------------------------
+
+st.subheader("📊 ETF RSI Dashboard")
+
+if not df_results.empty:
+
+    display_df = df_results[[
+        'ETF',
+        'PRICE',
+        'RSI',
+        'SIGNAL'
+    ]]
+
+    st.write(
+        display_df.to_html(
             escape=False,
             index=False
         ),
-
         unsafe_allow_html=True
-
     )
 
 else:
 
     st.warning("No ETF Data Available")
 
-# ---------------------------------------------------
-# BUY ZONE
-# ---------------------------------------------------
+# -------------------------------------------------
+# BUY ZONE TABLE
+# -------------------------------------------------
 
 buy_df = df_results[
-    df_results["RSI"] < 35
+    df_results['RSI'] < 35
 ]
 
 st.subheader("🟡 Buy Zone ETFs")
 
 if not buy_df.empty:
 
-    st.write(
+    buy_display = buy_df[[
+        'ETF',
+        'PRICE',
+        'RSI',
+        'SIGNAL'
+    ]]
 
-        buy_df.to_html(
+    st.write(
+        buy_display.to_html(
             escape=False,
             index=False
         ),
-
         unsafe_allow_html=True
-
     )
 
 else:
 
-    st.info("No ETF In Buy Zone")
+    st.info("No ETF Currently In Buy Zone")
 
-# ---------------------------------------------------
-# STRONG BUY ZONE
-# ---------------------------------------------------
+# -------------------------------------------------
+# STRONG BUY TABLE
+# -------------------------------------------------
 
 strong_buy_df = df_results[
-    df_results["RSI"] < 30
+    df_results['RSI'] < 30
 ]
 
 st.subheader("🟢 Strong Buy ETFs")
 
 if not strong_buy_df.empty:
 
-    st.write(
+    strong_display = strong_buy_df[[
+        'ETF',
+        'PRICE',
+        'RSI',
+        'SIGNAL'
+    ]]
 
-        strong_buy_df.to_html(
+    st.write(
+        strong_display.to_html(
             escape=False,
             index=False
         ),
-
         unsafe_allow_html=True
-
     )
 
 else:
 
     st.info("No Strong Buy ETF Found")
 
-# ---------------------------------------------------
-# SIDEBAR
-# ---------------------------------------------------
+# -------------------------------------------------
+# SIDEBAR RULES
+# -------------------------------------------------
 
-st.sidebar.title("📌 RSI RULES")
+st.sidebar.markdown("---")
 
-st.sidebar.success("RSI Below 30 = Strong Buy")
+st.sidebar.title("📌 RSI Rules")
 
-st.sidebar.warning("RSI Below 35 = Buy Zone")
+st.sidebar.success("RSI < 30 = Strong Buy")
 
-st.sidebar.error("RSI Above 70 = Overbought")
+st.sidebar.warning("RSI < 35 = Buy Zone")
 
-# ---------------------------------------------------
-# LAST UPDATED
-# ---------------------------------------------------
+st.sidebar.error("RSI > 70 = Overbought")
+
+# -------------------------------------------------
+# FOOTER
+# -------------------------------------------------
+
+st.markdown("---")
 
 st.caption(
-
     f"Last Updated: "
     f"{datetime.now().strftime('%d-%b-%Y %H:%M:%S')}"
-
 )
+
+st.caption(
+    "Powered by Streamlit + Yahoo Finance"
+)
+```
+
+---
+
+# HOW TO UPDATE YOUR WEBSITE
+
+## STEP 1
+
+Open your GitHub repository.
+
+---
+
+## STEP 2
+
+Open:
+
+```text
+app.py
+```
+
+---
+
+## STEP 3
+
+Click:
+
+```text
+✏ Edit
+```
+
+---
+
+## STEP 4
+
+Delete ALL old code.
+
+---
+
+## STEP 5
+
+Paste this FULL new professional code.
+
+Keyboard:
+
+```text
+CTRL + V
+```
+
+---
+
+## STEP 6
+
+Scroll down.
+
+Click:
+
+```text
+Commit changes
+```
+
+---
+
+# FINAL RESULT
+
+Your website will now look like a professional trading dashboard with:
+
+* Dark theme
+* Dashboard cards
+* ETF search
+* RSI filters
+* TradingView links
+* Buy Zone tables
+* Strong Buy tables
+* Sidebar controls
+* Live ETF scanner
+* Mobile friendly UI
+* Modern professional design
