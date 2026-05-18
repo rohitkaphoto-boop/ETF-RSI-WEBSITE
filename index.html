@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NSE ETF RSI Dashboard</title>
+
+  <style>
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      background-color: #0f172a;
+      color: white;
+      padding: 20px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .title {
+      font-size: 36px;
+      font-weight: bold;
+    }
+
+    .refresh-btn {
+      background-color: #2563eb;
+      border: none;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    .refresh-btn:hover {
+      background-color: #1d4ed8;
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .card {
+      background-color: #111827;
+      padding: 20px;
+      border-radius: 15px;
+      border: 1px solid #374151;
+      box-shadow: 0px 4px 10px rgba(0,0,0,0.3);
+    }
+
+    .card-title {
+      color: #9ca3af;
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+
+    .card-value {
+      font-size: 32px;
+      font-weight: bold;
+    }
+
+    .table-container {
+      background-color: #111827;
+      padding: 20px;
+      border-radius: 15px;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th {
+      background-color: #1e293b;
+      padding: 15px;
+      text-align: left;
+      color: #cbd5e1;
+    }
+
+    td {
+      padding: 15px;
+      border-bottom: 1px solid #374151;
+    }
+
+    tr:hover {
+      background-color: #1e293b;
+    }
+
+    .strong-buy {
+      color: #22c55e;
+      font-weight: bold;
+    }
+
+    .buy-zone {
+      color: #facc15;
+      font-weight: bold;
+    }
+
+    .neutral {
+      color: #cbd5e1;
+      font-weight: bold;
+    }
+
+    .overbought {
+      color: #ef4444;
+      font-weight: bold;
+    }
+
+    a {
+      color: #60a5fa;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .footer {
+      margin-top: 30px;
+      text-align: center;
+      color: #9ca3af;
+    }
+
+    .search-box {
+      margin-bottom: 20px;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      font-size: 16px;
+      background-color: #1e293b;
+      color: white;
+    }
+
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div>
+      <div class="title">📈 NSE ETF RSI Dashboard</div>
+      <p>Professional ETF Buying Zone Scanner</p>
+    </div>
+
+    <button class="refresh-btn" onclick="refreshData()">
+      🔄 Refresh Data
+    </button>
+  </div>
+
+  <div class="dashboard-grid">
+
+    <div class="card">
+      <div class="card-title">Total ETFs</div>
+      <div class="card-value" id="total-etfs">0</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Strong Buy</div>
+      <div class="card-value" id="strong-buy-count">0</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Buy Zone</div>
+      <div class="card-value" id="buy-zone-count">0</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Overbought</div>
+      <div class="card-value" id="overbought-count">0</div>
+    </div>
+
+  </div>
+
+  <div class="search-box">
+    <input
+      type="text"
+      id="searchInput"
+      placeholder="Search ETF..."
+      onkeyup="searchETF()"
+    />
+  </div>
+
+  <div class="table-container">
+
+    <h2>📊 ETF RSI Data</h2>
+
+    <table id="etfTable">
+
+      <thead>
+        <tr>
+          <th>ETF</th>
+          <th>Price</th>
+          <th>RSI</th>
+          <th>Signal</th>
+        </tr>
+      </thead>
+
+      <tbody id="tableBody">
+      </tbody>
+
+    </table>
+
+  </div>
+
+  <div class="footer">
+    <p id="lastUpdated"></p>
+    <p>Powered by HTML + CSS + JavaScript</p>
+  </div>
+
+  <script>
+
+    const etfs = [
+      {
+        name: "NIFTYBEES",
+        price: 252,
+        rsi: 31,
+      },
+      {
+        name: "BANKBEES",
+        price: 563,
+        rsi: 28,
+      },
+      {
+        name: "ITBEES",
+        price: 42,
+        rsi: 48,
+      },
+      {
+        name: "JUNIORBEES",
+        price: 721,
+        rsi: 34,
+      },
+      {
+        name: "MON100",
+        price: 148,
+        rsi: 72,
+      },
+      {
+        name: "MAFANG",
+        price: 89,
+        rsi: 39,
+      },
+      {
+        name: "CPSEETF",
+        price: 76,
+        rsi: 29,
+      },
+      {
+        name: "PSUBNKIETF",
+        price: 68,
+        rsi: 33,
+      },
+      {
+        name: "AUTOBEES",
+        price: 189,
+        rsi: 61,
+      },
+      {
+        name: "PHARMABEES",
+        price: 24,
+        rsi: 25,
+      }
+    ];
+
+    function getSignal(rsi) {
+
+      if (rsi < 30) {
+        return {
+          text: "🟢 Strong Buy",
+          className: "strong-buy"
+        };
+      }
+
+      if (rsi < 35) {
+        return {
+          text: "🟡 Buy Zone",
+          className: "buy-zone"
+        };
+      }
+
+      if (rsi > 70) {
+        return {
+          text: "🔴 Overbought",
+          className: "overbought"
+        };
+      }
+
+      return {
+        text: "⚪ Neutral",
+        className: "neutral"
+      };
+    }
+
+    function loadTable(data) {
+
+      const tableBody = document.getElementById("tableBody");
+
+      tableBody.innerHTML = "";
+
+      let strongBuy = 0;
+      let buyZone = 0;
+      let overbought = 0;
+
+      data.forEach(etf => {
+
+        const signal = getSignal(etf.rsi);
+
+        if (etf.rsi < 30) strongBuy++;
+        else if (etf.rsi < 35) buyZone++;
+        else if (etf.rsi > 70) overbought++;
+
+        const row = `
+          <tr>
+            <td>
+              <a
+                href="https://www.tradingview.com/symbols/NSE-${etf.name}/"
+                target="_blank"
+              >
+                ${etf.name}
+              </a>
+            </td>
+
+            <td>₹${etf.price}</td>
+
+            <td>${etf.rsi}</td>
+
+            <td class="${signal.className}">
+              ${signal.text}
+            </td>
+          </tr>
+        `;
+
+        tableBody.innerHTML += row;
+      });
+
+      document.getElementById("total-etfs").innerText = data.length;
+      document.getElementById("strong-buy-count").innerText = strongBuy;
+      document.getElementById("buy-zone-count").innerText = buyZone;
+      document.getElementById("overbought-count").innerText = overbought;
+
+      const now = new Date();
+
+      document.getElementById("lastUpdated").innerText =
+        "Last Updated: " + now.toLocaleString();
+    }
+
+    function refreshData() {
+
+      alert("ETF Data Refreshed Successfully");
+
+      loadTable(etfs);
+    }
+
+    function searchETF() {
+
+      const input = document
+        .getElementById("searchInput")
+        .value
+        .toUpperCase();
+
+      const filtered = etfs.filter(etf =>
+        etf.name.includes(input)
+      );
+
+      loadTable(filtered);
+    }
+
+    loadTable(etfs);
+
+  </script>
+
+</body>
+</html>
