@@ -1,7 +1,7 @@
 import streamlit as st
+import yfinance as yf
 import pandas as pd
 import numpy as np
-import investpy
 from datetime import datetime
 
 # ------------------------------------------------
@@ -12,6 +12,17 @@ st.set_page_config(
     page_title="NSE ETF LIVE RSI Dashboard",
     page_icon="📈",
     layout="wide"
+)
+
+# ------------------------------------------------
+# AUTO REFRESH
+# ------------------------------------------------
+
+st.markdown(
+    """
+    <meta http-equiv="refresh" content="300">
+    """,
+    unsafe_allow_html=True
 )
 
 # ------------------------------------------------
@@ -89,7 +100,7 @@ a {
 st.title("📈 NSE ETF LIVE RSI Dashboard")
 
 st.markdown(
-    "Professional Live ETF RSI Scanner"
+    "### Professional Live ETF RSI Scanner"
 )
 
 # ------------------------------------------------
@@ -112,6 +123,7 @@ etfs = [
     "ENERGYETF",
     "INFRABEES",
     "CONSUMBEES",
+    "DIVOPPBEES",
     "MON100",
     "MAFANG"
 
@@ -121,14 +133,14 @@ etfs = [
 # SIDEBAR
 # ------------------------------------------------
 
-st.sidebar.title("Dashboard Settings")
+st.sidebar.title("Dashboard Filters")
 
 search_etf = st.sidebar.text_input(
     "Search ETF"
 )
 
 filter_option = st.sidebar.selectbox(
-    "Select Filter",
+    "Filter",
     [
         "All ETFs",
         "Strong Buy",
@@ -165,7 +177,7 @@ def calculate_rsi(data, period=14):
 
 if st.button("🔄 Refresh Live Data"):
 
-    st.success("Live Data Updated")
+    st.success("Live ETF Data Updated")
 
 # ------------------------------------------------
 # MAIN DATA
@@ -179,21 +191,28 @@ for i, etf in enumerate(etfs):
 
     try:
 
-        # GET HISTORICAL DATA
+        symbol = etf + ".NS"
 
-        df = investpy.get_etf_historical_data(
+        # LIVE DATA
 
-            etf=etf,
-            country='india',
-            from_date='01/01/2024',
-            to_date=datetime.now().strftime('%d/%m/%Y')
+        df = yf.download(
+
+            symbol,
+
+            period="5d",
+
+            interval="15m",
+
+            progress=False,
+
+            threads=False
 
         )
 
         if df.empty:
             continue
 
-        close = df["Close"]
+        close = df["Close"].squeeze()
 
         latest_price = round(
             float(close.iloc[-1]),
@@ -270,7 +289,7 @@ df_results = pd.DataFrame(
 )
 
 # ------------------------------------------------
-# SEARCH
+# SEARCH FILTER
 # ------------------------------------------------
 
 if search_etf:
@@ -281,7 +300,7 @@ if search_etf:
     ]
 
 # ------------------------------------------------
-# FILTERS
+# FILTER SYSTEM
 # ------------------------------------------------
 
 if filter_option == "Strong Buy":
@@ -380,6 +399,42 @@ else:
     st.warning("No ETF Data Available")
 
 # ------------------------------------------------
+# BUY ZONE TABLE
+# ------------------------------------------------
+
+buy_df = df_results[
+    df_results["RSI"] < 35
+]
+
+st.subheader("🟡 Buy Zone ETFs")
+
+if not buy_df.empty:
+
+    buy_show = buy_df[
+        [
+            "ETF",
+            "PRICE",
+            "RSI",
+            "SIGNAL"
+        ]
+    ]
+
+    st.write(
+
+        buy_show.to_html(
+            escape=False,
+            index=False
+        ),
+
+        unsafe_allow_html=True
+
+    )
+
+else:
+
+    st.info("No ETF In Buy Zone")
+
+# ------------------------------------------------
 # FOOTER
 # ------------------------------------------------
 
@@ -388,4 +443,8 @@ st.markdown("---")
 st.caption(
     f"Last Updated: "
     f"{datetime.now().strftime('%d-%b-%Y %H:%M:%S')}"
+)
+
+st.caption(
+    "Powered by Streamlit + Live Market Data"
 )
