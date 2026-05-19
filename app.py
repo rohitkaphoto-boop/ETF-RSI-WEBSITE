@@ -1,7 +1,6 @@
 import streamlit as st
 import yfinance as yf
 import pandas as pd
-import numpy as np
 from datetime import datetime
 
 # ------------------------------------------------
@@ -9,13 +8,19 @@ from datetime import datetime
 # ------------------------------------------------
 
 st.set_page_config(
-    page_title="NSE ETF RSI Dashboard",
+    page_title="Professional NSE ETF RSI Dashboard",
     page_icon="📈",
     layout="wide"
 )
 
 # ------------------------------------------------
-# CUSTOM STYLE
+# AUTO REFRESH
+# ------------------------------------------------
+
+st_autorefresh = st.empty()
+
+# ------------------------------------------------
+# CUSTOM CSS
 # ------------------------------------------------
 
 st.markdown("""
@@ -36,19 +41,51 @@ h1, h2, h3 {
 .metric-box {
     background-color: #111827;
     padding: 20px;
-    border-radius: 12px;
+    border-radius: 14px;
     text-align: center;
     border: 1px solid #374151;
+    box-shadow: 0px 4px 12px rgba(0,0,0,0.4);
 }
 
 .metric-title {
     color: #9CA3AF;
-    font-size: 16px;
+    font-size: 15px;
 }
 
 .metric-value {
     color: white;
     font-size: 28px;
+    font-weight: bold;
+}
+
+div[data-testid="stSidebar"] {
+    background-color: #111827;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+thead tr {
+    background-color: #1F2937;
+    color: white;
+}
+
+tbody tr {
+    background-color: #111827;
+    color: white;
+}
+
+td, th {
+    padding: 12px;
+    border: 1px solid #374151;
+    text-align: center;
+}
+
+a {
+    color: #60A5FA;
+    text-decoration: none;
     font-weight: bold;
 }
 
@@ -59,10 +96,10 @@ h1, h2, h3 {
 # TITLE
 # ------------------------------------------------
 
-st.title("📈 NSE ETF RSI Dashboard")
+st.title("📈 NSE ETF LIVE RSI Dashboard")
 
 st.markdown(
-    "Professional Low RSI ETF Buying Zone Scanner"
+    "### Professional Live Low RSI ETF Scanner"
 )
 
 # ------------------------------------------------
@@ -108,14 +145,14 @@ etfs = [
 # SIDEBAR
 # ------------------------------------------------
 
-st.sidebar.title("Dashboard Filters")
+st.sidebar.title("⚙ Dashboard Settings")
 
 search_etf = st.sidebar.text_input(
     "Search ETF"
 )
 
 filter_option = st.sidebar.selectbox(
-    "Select Filter",
+    "Filter",
     [
         "All ETFs",
         "Strong Buy",
@@ -150,12 +187,12 @@ def calculate_rsi(data, period=14):
 # REFRESH BUTTON
 # ------------------------------------------------
 
-if st.button("🔄 Refresh ETF Data"):
+if st.button("🔄 Refresh Live Data"):
 
-    st.success("ETF Data Updated")
+    st.success("Live Data Updated")
 
 # ------------------------------------------------
-# DATA COLLECTION
+# MAIN DATA
 # ------------------------------------------------
 
 results = []
@@ -168,11 +205,14 @@ for i, etf in enumerate(etfs):
 
         symbol = etf + ".NS"
 
+        # LIVE 5 MINUTE DATA
+
         df = yf.download(
             symbol,
-            period="3mo",
-            interval="1d",
-            progress=False
+            period="5d",
+            interval="5m",
+            progress=False,
+            threads=False
         )
 
         if df.empty:
@@ -212,20 +252,23 @@ for i, etf in enumerate(etfs):
 
         # TRADINGVIEW LINK
 
-        link = (
+        tv_link = (
             f"https://www.tradingview.com/symbols/NSE-{etf}/"
         )
 
         etf_link = (
-            f'<a href="{link}" target="_blank">{etf}</a>'
+            f'<a href="{tv_link}" '
+            f'target="_blank">{etf}</a>'
         )
 
         results.append([
+
             etf,
             etf_link,
             latest_price,
             latest_rsi,
             signal
+
         ])
 
     except:
@@ -238,11 +281,13 @@ for i, etf in enumerate(etfs):
 # ------------------------------------------------
 
 columns = [
+
     "ETF_NAME",
     "ETF",
     "PRICE",
     "RSI",
     "SIGNAL"
+
 ]
 
 df_results = pd.DataFrame(
@@ -262,7 +307,7 @@ if search_etf:
     ]
 
 # ------------------------------------------------
-# FILTER SYSTEM
+# FILTERS
 # ------------------------------------------------
 
 if filter_option == "Strong Buy":
@@ -296,7 +341,7 @@ if not df_results.empty:
     )
 
 # ------------------------------------------------
-# METRIC CARDS
+# KPI CARDS
 # ------------------------------------------------
 
 total_etfs = len(df_results)
@@ -372,10 +417,10 @@ with col4:
     """, unsafe_allow_html=True)
 
 # ------------------------------------------------
-# ETF TABLE
+# MAIN TABLE
 # ------------------------------------------------
 
-st.subheader("📊 ETF RSI Dashboard")
+st.subheader("📊 Live ETF RSI Dashboard")
 
 if not df_results.empty:
 
@@ -389,11 +434,14 @@ if not df_results.empty:
     ]
 
     st.write(
+
         show_df.to_html(
             escape=False,
             index=False
         ),
+
         unsafe_allow_html=True
+
     )
 
 else:
@@ -422,16 +470,67 @@ if not buy_df.empty:
     ]
 
     st.write(
+
         buy_show.to_html(
             escape=False,
             index=False
         ),
+
         unsafe_allow_html=True
+
     )
 
 else:
 
     st.info("No ETF In Buy Zone")
+
+# ------------------------------------------------
+# STRONG BUY TABLE
+# ------------------------------------------------
+
+strong_df = df_results[
+    df_results["RSI"] < 30
+]
+
+st.subheader("🟢 Strong Buy ETFs")
+
+if not strong_df.empty:
+
+    strong_show = strong_df[
+        [
+            "ETF",
+            "PRICE",
+            "RSI",
+            "SIGNAL"
+        ]
+    ]
+
+    st.write(
+
+        strong_show.to_html(
+            escape=False,
+            index=False
+        ),
+
+        unsafe_allow_html=True
+
+    )
+
+else:
+
+    st.info("No Strong Buy ETFs Found")
+
+# ------------------------------------------------
+# SIDEBAR RULES
+# ------------------------------------------------
+
+st.sidebar.markdown("---")
+
+st.sidebar.success("RSI < 30 = Strong Buy")
+
+st.sidebar.warning("RSI < 35 = Buy Zone")
+
+st.sidebar.error("RSI > 70 = Overbought")
 
 # ------------------------------------------------
 # FOOTER
