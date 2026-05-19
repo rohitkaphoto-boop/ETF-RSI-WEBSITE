@@ -1,5 +1,7 @@
 streamlit
+yfinance==0.2.40
 pandas
 numpy
-investpy
 plotly
+setuptools
+wheel
